@@ -1,0 +1,132 @@
+public class Reservations {
+String[][] reservations = null;
+TableItem[] dataitem;
+int rows;
+int cols;
+
+public void loadreservations(Connection conn, Table tb, Blocks block, Cart
+cart){
+// create two dimensional array for reservation.
+if (reservations == null) {
+rows = block.blocks.size();
+cols = cart.carts.size() + 2;
+reservations = new String[rows][cols];
+dataitem = new TableItem[rows];
+for (int i = 0; i < rows; i++) {
+dataitem[i] = new TableItem(tb, SWT.NONE);
+}
+}
+// fill all cells with empty string.
+for (int i = 0; i < reservations.length; i++) {
+for (int j = 0; j < reservations[i].length; j++) {
+reservations[i][j] = "";
+}
+}
+// set day and blocks.
+String previous = "";
+for (int i = 0; i < rows; i++) {
+Block bk = block.blocks.get(i);
+if (!bk.getDay().equals(previous)) {
+reservations[i][0] = bk.getDay();
+previous = bk.getDay();
+}
+reservations[i][1] = bk.getBlockName();
+}
+//ArrayList<Reservations> reservations = new ArrayList<Reservations>();
+Statement stmt = null;
+try{
+// Execute a query
+
+      stmt = conn.createStatement();
+
+      String sql = "select schoolday, blockname, cart_column, reservation
+from reservations";
+
+      ResultSet rs = stmt.executeQuery(sql);
+      // Extract data from result set
+      while(rs.next()){
+         //Retrieve by column name
+
+         String s1 = rs.getString("schoolday");
+         String s2 = rs.getString("blockname");
+         String s3 = rs.getString("cart_column");
+         String s4 = rs.getString("reservation");
+
+         int cartPos = cart.carts.indexOf(s3);
+
+         Block bk = new Block(s1, s2, null);
+         int blockPos = block.blocks.indexOf(bk);
+         if (cartPos != -1 && blockPos != -1) {
+         reservations[blockPos][cartPos+2] = s4;
+         }
+        //reservations.add(bk);
+      }
+      rs.close();
+
+}catch(SQLException se){
+      //Handle errors for JDBC
+      se.printStackTrace();
+}catch(Exception e){
+      //Handle errors for Class.forName
+      e.printStackTrace();
+}finally{
+      //finally block used to close resources
+      try{
+         if(stmt!=null)
+        stmt.close();
+      }catch(SQLException se){
+      }// do nothing
+
+}//end try
+// final display.
+for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; j++) {
+      dataitem[i].setText(j, reservations[i][j]);
+      }
+}
+}
+public void setReservation(Connection connect, int row, int col, String
+reserve, Blocks block, Cart cart) {
+String curr = reservations[row][col];
+if (curr.equals(reserve)) {
+return;
+}
+
+Block blk = block.blocks.get(row);
+String cartName = cart.carts.get(col-2);
+String sql = null;
+if (curr.isEmpty()) {
+sql = "insert into reservations (schoolday, blockname, cart_column,
+reservation) values ('" + blk.schoolday + "','" + blk.blockname + "','" +
+cartName + "','" + reserve + "')";
+} else if (reserve.isEmpty()) {
+sql = "delete from reservations where schoolday='"+ blk.schoolday + "' and
+blockname = '" + blk.blockname + "' and cart_column = '" + cartName + "'";
+} else {
+sql = "UPDATE reservations SET reservation = '" + reserve + "' WHERE
+schoolday='"+ blk.schoolday + "' and blockname = '" + blk.blockname + "'
+and cart_column = '" + cartName + "'";
+}
+boolean b = true;
+Statement stmt = null;
+try{
+stmt = connect.createStatement();
+stmt.executeUpdate(sql);
+}catch(SQLException se){
+b = false;
+      se.printStackTrace();
+}finally{
+      //finally block used to close resources
+      try{
+         if(stmt!=null)
+        stmt.close();
+      }catch(SQLException se){
+      }// do nothing
+
+}//end try
+if (b) {
+reservations[row][col] = reserve;
+dataitem[row].setText(col, reserve);
+}
+}
+}
