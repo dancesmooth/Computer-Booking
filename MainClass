@@ -1,0 +1,310 @@
+//Coded by Andy
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Button;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.*;
+import java.util.Properties;
+
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.graphics.Color; 
+
+public class Booking {
+	private String myDBURL = "jdbc:mysql://localhost:3306/LDHBooking";
+	
+    private Connection connect = null;
+	protected Shell shlLdhssBookings;
+	private Text textInput;
+	private Text txtUsername;
+	private Text txtPassword;
+	private Table table;
+	private Button btnSignout;
+	
+	Cart cart = new Cart();
+	Blocks block = new Blocks();
+	Reservations reservation = new Reservations();
+	
+	int rowFocus = -1;
+	int colFocus = -1;
+	Color grayColor; 
+	/**
+	 * Launch the application.
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		try {
+			Booking window = new Booking();
+			window.open();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Open the window.
+	 */
+	public void open() {
+		Display display = Display.getDefault();
+		grayColor = display.getSystemColor(SWT.COLOR_GRAY);
+		createContents();
+		shlLdhssBookings.open();
+		shlLdhssBookings.layout();
+		while (!shlLdhssBookings.isDisposed()) {
+			if (!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
+	}
+
+	protected void getMyDBURL() {
+		String cfgFile = (new File(".")).getAbsolutePath() + File.separator + "LDHBooking.cfg";
+		if (Files.exists(Paths.get(cfgFile))) {
+			Properties prop = new Properties();
+			InputStream input = null;
+			try {
+				input = new FileInputStream(cfgFile);
+				prop.load(input);
+				String tmp = prop.getProperty("myDBURL");
+				if (tmp != null && !tmp.isEmpty()) {
+					myDBURL = tmp;
+				}
+				
+			} catch(IOException e) {
+				
+			} finally {
+				if (input != null) {
+					try {
+					input.close();
+					} catch(IOException e) {
+						
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Create contents of the window.
+	 */
+	protected void createContents() {
+		this.getMyDBURL();
+		
+		shlLdhssBookings = new Shell();
+		shlLdhssBookings.setSize(1200, 891);
+		shlLdhssBookings.setText("LDHSS Bookings - Book by Time");
+		
+		textInput = new Text(shlLdhssBookings, SWT.BORDER);
+		textInput.setBounds(965, 10, 76, 21);
+		
+		Button btnLogin = new Button(shlLdhssBookings, SWT.NONE);
+		btnLogin.setBounds(340, 20, 75, 25);
+		btnLogin.setText("Login");
+		
+		txtUsername = new Text(shlLdhssBookings, SWT.BORDER);
+		txtUsername.setToolTipText("Username");
+		txtUsername.setBounds(115, 10, 120, 21);
+		
+		txtPassword = new Text(shlLdhssBookings, SWT.BORDER | SWT.PASSWORD);
+		txtPassword.setToolTipText("Password");
+		txtPassword.setBounds(115, 37, 120, 21);
+		
+		table = new Table(shlLdhssBookings, SWT.BORDER | SWT.FULL_SELECTION);
+		table.setBounds(10, 64, 1164, 778);
+		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
+		
+		btnSignout = new Button(shlLdhssBookings, SWT.NONE);
+		btnSignout.setBounds(472, 20, 75, 25);
+		btnSignout.setText("Sign Out");
+		
+		Label lblUser = new Label(shlLdhssBookings, SWT.NONE);
+		lblUser.setBounds(26, 13, 55, 15);
+		lblUser.setText("User:");
+		
+		Label lblPassword = new Label(shlLdhssBookings, SWT.NONE);
+		lblPassword.setBounds(26, 37, 55, 15);
+		lblPassword.setText("Password:");
+		
+		Label lblPressEnterTo = new Label(shlLdhssBookings, SWT.NONE);
+		lblPressEnterTo.setBounds(617, 25, 345, 32);
+		lblPressEnterTo.setText("Press Enter to confirm changes");
+		
+		shlLdhssBookings.addListener(SWT.Close, new Listener() {
+			@Override
+			public void handleEvent(org.eclipse.swt.widgets.Event arg0) {
+			
+				signout();
+				
+				
+			}
+
+        });
+		
+		
+		btnLogin.addListener(SWT.Selection, new Listener() {
+
+	           
+			@Override
+			public void handleEvent(org.eclipse.swt.widgets.Event arg0) {
+				
+				signout();
+				
+				String username = txtUsername.getText();
+			
+				String password = txtPassword.getText();
+				
+			try{
+				
+				  // This will load the MySQL driver, each DB has its own driver
+	            Class.forName("com.mysql.jdbc.Driver");
+	            // Setup the connection with the DB
+	            connect = DriverManager.getConnection(myDBURL + "?user=" + username + "&password=" + password);
+				
+				cart.loadcart(connect, table);
+				block.loadblocks(connect, table);
+				reservation.loadreservations(connect, table, block, cart);
+				
+				
+				
+			}catch(Exception e){
+				MessageBox messageBox = new MessageBox(shlLdhssBookings, SWT.OK);
+		        messageBox.setText("Notice");
+
+		        messageBox.setMessage(e.getMessage());
+
+		       messageBox.open();
+				
+			}
+				
+				
+				
+				
+			}
+
+        });
+		
+		btnSignout.addListener(SWT.Selection, new Listener() {
+
+	           
+			@Override
+			public void handleEvent(org.eclipse.swt.widgets.Event arg0) {
+				
+				signout();
+				
+			}
+
+        });
+		
+		// handle mouse click
+		table.addListener(SWT.MouseDown, new Listener() {
+			
+		      public void handleEvent(Event event) {
+		    	if (connect == null) {
+		    		return;
+		    	}
+		    	 
+		        Rectangle clientArea = table.getClientArea();
+		        Point pt = new Point(event.x, event.y);
+		        int index = table.getTopIndex();
+		        while (index < table.getItemCount()) {
+		          boolean visible = false;
+		          TableItem item = table.getItem(index);
+		          for (int i = 0; i < cart.getCartSize() + 2; i++) {
+		            Rectangle rect = item.getBounds(i);
+		            if (rect.contains(pt)) {
+		              
+		              boolean changed = index != rowFocus || i != colFocus;
+		               
+		              if (changed) {
+		            	  if (i == 0 || i == 1) {
+		            		  changed = false;
+		            	  }
+		              }
+		            	
+		              if (changed) {
+		            	// col is changed.
+		            	if (colFocus != i) {
+		            		if (colFocus != -1) {
+				    		 
+		            			for (TableItem itm : reservation.dataitem) {
+		            				itm.setBackground(colFocus, null);
+		            			}
+		            		}
+				    		 //
+		            		colFocus = i;
+		            		
+		            		for (TableItem itm : reservation.dataitem) {
+	            				itm.setBackground(colFocus, grayColor);
+	            			}
+				    		
+				    	 }
+		            	
+		            		rowFocus = index;
+		            		textInput.setLocation(table.getLocation().x + rect.x, table.getLocation().y + rect.y);
+		            		textInput.setFocus();
+		            		textInput.setSize(rect.width, rect.height);
+		            		textInput.setText(reservation.reservations[index][colFocus]);
+		            }
+		              
+		             
+		            }
+		            if (!visible && rect.intersects(clientArea)) {
+		              visible = true;
+		            }
+		          }
+		          if (!visible)
+		            return;
+		          index++;
+		        }
+		      }
+		    });
+		
+		
+		textInput.addListener(SWT.Traverse, new Listener()
+	    {
+	        @Override
+	        public void handleEvent(Event event)
+	        {
+	            if(event.detail == SWT.TRAVERSE_RETURN)
+	            {
+	                String d = textInput.getText();
+	               if (d != null && connect != null && rowFocus != -1 && colFocus != -1) {
+	            	   reservation.setReservation(shlLdhssBookings, connect, rowFocus, colFocus, d, block, cart);
+	               }
+	            }
+	        }
+	    });
+
+	}
+	
+	private void signout(){
+        
+ 	   try {
+				 if (connect != null) {
+             connect.close();
+             connect = null;
+				 }
+			 	 } catch (Exception e) {
+
+		        }
+			
+ 	  rowFocus = -1;
+ 		colFocus = -1;
+ 	   
+    }
+}
