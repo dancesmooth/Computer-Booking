@@ -1,0 +1,90 @@
+//Coded by Arman
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
+
+public class Cart {
+
+	private ArrayList<String> carts = new ArrayList<String>(); 
+	private TableColumn[] cols;
+	
+	public int getCartSize() {
+		return carts.size();
+	}
+	
+	public int getPositionByCartName(String nm) {
+		return carts.indexOf(nm);
+	}
+	
+	public String getCartNameByPos(int i) {
+		return carts.get(i);
+	}
+	
+	public int loadcart(Connection conn, Table tb){
+		if (!carts.isEmpty()) {
+			return carts.size();
+		}
+		
+		Statement stmt = null;
+		try{
+		     
+
+		      
+		      // Execute a query
+		     
+		      stmt = conn.createStatement();
+
+		      String sql = "SELECT Cart_column FROM carts order by Cart_column asc";
+		      ResultSet rs = stmt.executeQuery(sql);
+		      // Extract data from result set
+		      while(rs.next()){
+		         //Retrieve by column name
+		         
+		         String c = rs.getString("Cart_column");
+		         carts.add(c);
+		      }
+		      rs.close();
+		      
+		}catch(SQLException se){
+		      //Handle errors for JDBC
+		      se.printStackTrace();
+		}catch(Exception e){
+		      //Handle errors for Class.forName
+		      e.printStackTrace();
+		}finally{
+		      //finally block used to close resources
+		      try{
+		         if(stmt!=null)
+		        	 stmt.close();
+		      }catch(SQLException se){
+		      }// do nothing
+		     
+		}//end try
+		
+		// UI part.
+		cols = new TableColumn[carts.size() + 2];
+		cols[0] = new TableColumn(tb, SWT.NONE);
+		cols[0].setText("[ Weekday    Date              ]");
+		cols[1] = new TableColumn(tb, SWT.NONE);
+		cols[1].setText("[ Block                          ]");
+		
+		for (int i = 0; i < carts.size(); i++) {
+			cols[i+2] = new TableColumn(tb, SWT.NONE);
+			cols[i+2].setText(carts.get(i));
+		}
+		
+		for (int i = 0; i < cols.length; i++) {
+			cols[i].pack();
+		}
+		
+		return carts.size();
+		
+	}
+	
+}
