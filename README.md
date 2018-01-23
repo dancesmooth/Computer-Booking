@@ -45,3 +45,11 @@ Add the required days
 Insert into carts (Cart_column) values ('CoCo Lib ChromeChart ChromeCart'); 
 Add all required carts
 
+9. Export database:
+run cmd as administrator
+C:\Program Files\MySQL\MySQL Server 5.7\bin>mysqldump.exe -u Andy -p LDHBooking > d:\LDHBooking.sql
+Enter password: RoadmanHe
+
+import:
+mysql.exe -u Andy -p LDHBooking < d:\LDHBooking.sql
+
