@@ -1,0 +1,63 @@
+//Coded by Manmeek
+public class Block {
+	// calendar day.
+	private String schoolday = null;
+	// block name.
+	private String blockname = null;
+	// week day.
+	private String weekdayname = null;
+	
+	public Block(String s1, String s2, String s3 ){
+		
+		schoolday = s1;
+		blockname = s2;
+		weekdayname = s3;
+		
+		
+		
+		
+	}
+	
+	public String getSchoolday() {
+		return schoolday;
+	}
+	
+	public String getBlockname() {
+		return blockname;
+	}
+	
+	public String getWeekdayname() {
+		return weekdayname;
+	}
+	
+	public String getDay() {
+		return weekdayname + "  " + schoolday;
+	}
+	public String getBlockName() {
+		return blockname;
+	}
+	
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof Block)) {
+			return false;
+		}
+		Block other = (Block)o;
+		return this.schoolday.equals(other.schoolday) && this.blockname.equals(other.blockname);
+	}
+	
+	public int hashCode() {
+		int prime = 31;
+		int result = 1;
+		result = prime * result + ((schoolday == null) ? 0 : schoolday.hashCode());
+		result = prime * result + ((blockname == null) ? 0 : blockname.hashCode());
+		return result;
+	}
+	
+	public String toString() {
+		return schoolday + "_" + blockname;
+	}
+	
+}
