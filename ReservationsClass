@@ -1,0 +1,162 @@
+//Coded by Yusuf
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+
+public class Reservations {
+	
+	String[][] reservations = null;
+	
+	TableItem[] dataitem;
+	
+	int rows;
+	int cols;
+
+	public void loadreservations(Connection conn, Table tb, Blocks block, Cart cart){
+		// create two dimensional array for reservation.
+		if (reservations == null) {
+			rows = block.getBlockSize();
+			cols = cart.getCartSize() + 2;
+			
+			reservations = new String[rows][cols];
+			dataitem = new TableItem[rows];
+			for (int i = 0; i < rows; i++) {
+				dataitem[i] = new TableItem(tb, SWT.NONE);
+			}	
+			
+		}
+		// fill all cells with empty string.
+		for (int i = 0; i < reservations.length; i++) {
+			for (int j = 0; j < reservations[i].length; j++) {
+				reservations[i][j] = "";
+			}
+		}
+		// set day and blocks.
+		String previous = "";
+		for (int i = 0; i < rows; i++) {
+			Block bk = block.getBlockByPos(i);
+			if (!bk.getDay().equals(previous)) {
+				reservations[i][0] = bk.getDay();
+				previous = bk.getDay();
+			}	
+			reservations[i][1] = bk.getBlockName();
+		}
+		
+		
+		
+		//ArrayList<Reservations> reservations = new ArrayList<Reservations>(); 
+		
+		Statement stmt = null;
+		try{
+		 // Execute a query
+		     
+		      stmt = conn.createStatement();
+
+		      String sql = "select schoolday, blockname, cart_column, reservation from reservations";
+		    		  	 
+		      ResultSet rs = stmt.executeQuery(sql);
+		      // Extract data from result set
+		      while(rs.next()){
+		         //Retrieve by column name
+		         
+		         String s1 = rs.getString("schoolday");
+		         String s2 = rs.getString("blockname");
+		         String s3 = rs.getString("cart_column");
+		         String s4 = rs.getString("reservation");
+		         
+		         int cartPos = cart.getPositionByCartName(s3);
+		         
+		         Block bk = new Block(s1, s2, null);
+		         int blockPos = block.getPositionByBlock(bk);
+		         if (cartPos != -1 && blockPos != -1) {
+		         reservations[blockPos][cartPos+2] = s4;
+		         }
+		        //reservations.add(bk);
+		      }
+		      rs.close();
+		      
+		}catch(SQLException se){
+		      //Handle errors for JDBC
+		      se.printStackTrace();
+		}catch(Exception e){
+		      //Handle errors for Class.forName
+		      e.printStackTrace();
+		}finally{
+		      //finally block used to close resources
+		      try{
+		         if(stmt!=null)
+		        	 stmt.close();
+		      }catch(SQLException se){
+		      }// do nothing
+		     
+		}//end try
+		
+		
+		// final display.
+		for (int i = 0; i < rows; i++) {
+			
+		      for (int j = 0; j < cols; j++) {
+		    	  dataitem[i].setText(j, reservations[i][j]);
+		      }
+		}
+	}
+	
+	public void setReservation(Shell shlLdhssBookings, Connection connect, int row, int col, String reserve, Blocks block, Cart cart) {
+		String curr = reservations[row][col];
+		if (curr.equals(reserve)) {
+			return;
+		}
+		 
+		
+		Block blk = block.getBlockByPos(row);
+		String cartName = cart.getCartNameByPos(col-2);
+		
+		String sql = null;
+		if (curr.isEmpty()) {
+			sql = "insert into reservations (schoolday, blockname, cart_column, reservation) values ('" + blk.getSchoolday() + "','" + blk.getBlockname() + "','" + cartName + "','" + reserve + "')";
+		} else if (reserve.isEmpty()) {
+		sql = "delete from reservations where schoolday='"+ blk.getSchoolday() + "' and blockname = '" + blk.getBlockname() + "' and cart_column = '" + cartName + "'";
+		} else {
+			sql = "UPDATE reservations SET reservation = '" + reserve + "' WHERE schoolday='"+ blk.getSchoolday() + "' and blockname = '" + blk.getBlockname() + "' and cart_column = '" + cartName + "'";
+		}
+		
+		boolean b = true;
+		Statement stmt = null;
+		try{
+			stmt = connect.createStatement();
+			stmt.executeUpdate(sql);
+			
+		}catch(SQLException se){
+			b = false;
+		      se.printStackTrace();
+
+		      MessageBox messageBox = new MessageBox(shlLdhssBookings, SWT.OK);
+		        messageBox.setText("Notice");
+
+		        messageBox.setMessage(se.getMessage());
+
+		       messageBox.open();
+		      
+		}finally{
+		      //finally block used to close resources
+		      try{
+		         if(stmt!=null)
+		        	 stmt.close();
+		      }catch(SQLException se){
+		      }// do nothing
+		     
+		}//end try
+		if (b) {
+		reservations[row][col] = reserve;
+		dataitem[row].setText(col, reserve);
+		}
+	}
+	
+}
