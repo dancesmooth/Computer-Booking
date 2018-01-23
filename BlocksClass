@@ -1,0 +1,81 @@
+//Coded by Andy
+import java.util.ArrayList;
+import org.eclipse.swt.widgets.Table;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public class Blocks {
+	// blocks loaded from tables "calendar" and "block"
+	private ArrayList<Block> blocks = new ArrayList<Block>(); 
+
+	public int getBlockSize() {
+		return blocks.size();
+	}
+	
+	public Block getBlockByPos(int i) {
+		return blocks.get(i);
+	}
+	
+	public int getPositionByBlock(Block bk) {
+		return blocks.indexOf(bk);
+	}
+	
+	/**
+	 * load blocks from tables "calendar" and "block".
+	 * @param conn
+	 * @param t
+	 * @return
+	 */
+	public int loadblocks(Connection conn, Table t){
+		
+		if(!blocks.isEmpty()){
+			
+			return blocks.size();
+			}
+		
+		Statement stmt = null;
+		try{
+		     
+
+		      
+		      // Execute a query
+		     
+		      stmt = conn.createStatement();
+
+		      String sql = "select calendar.schoolday, block.blockname, dayname(calendar.schoolday) as dname, block.pos " +
+		    		  	  "from calendar, block where weekday(calendar.schoolday) = block.weekdaynumber order by calendar.schoolday asc, block.pos asc";
+		      ResultSet rs = stmt.executeQuery(sql);
+		      // Extract data from result set
+		      while(rs.next()){
+		         //Retrieve by column name
+		         
+		         String s1 = rs.getString("schoolday");
+		         String s2 = rs.getString("blockname");
+		         String s3 = rs.getString("dname");
+		         Block bk = new Block(s1, s2, s3);
+		         blocks.add(bk);
+		      }
+		      rs.close();
+		      
+		}catch(SQLException se){
+		      //Handle errors for JDBC
+		      se.printStackTrace();
+		}catch(Exception e){
+		      //Handle errors for Class.forName
+		      e.printStackTrace();
+		}finally{
+		      //finally block used to close resources
+		      try{
+		         if(stmt!=null)
+		        	 stmt.close();
+		      }catch(SQLException se){
+		      }// do nothing
+		     
+		}//end try
+		
+		return blocks.size();
+	}
+	
+}
